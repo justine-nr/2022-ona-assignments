@@ -29,6 +29,8 @@ df = Connections %>% group_by(Company) %>% count(Company) %>% arrange(-n)
 
 df
 ```
-plot(Connections)
+plot(Company)
+
+
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
