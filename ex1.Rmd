@@ -15,7 +15,7 @@ This is an R Markdown format used for publishing markdown documents to GitHub. W
 
 You can include R code in the document as follows:
 
-```{r cars}
+```{r }
 library(readr)
 Connections <- read_csv("exercices/Connections.csv")
 View(Connections)
@@ -26,11 +26,11 @@ View(Connections)
 
 You can also embed plots, for example:
 
-```{r cars}
-install.packages("dplyr")
+```{r }
+#install.packages("dplyr")
 library(dplyr)
 
-df = Connections %>% group_by(Company) %>% count(Company)
+df = Connections %>% group_by(Company) %>% count(Company) %>% arrange(-n)
 
 df
 ```
