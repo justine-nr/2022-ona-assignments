@@ -1,19 +1,11 @@
-Ex1
+Exercice 1
 ================
 
-## GitHub Documents
-
-This is an R Markdown format used for publishing markdown documents to
-GitHub. When you click the **Knit** button all R code chunks are run and
-a markdown file (.md) suitable for publishing to GitHub is generated.
-
-## Including Code
-
-You can include R code in the document as follows:
+## Download contacts data from LinkedIn
 
 ``` r
 library(readr)
-Connections <- read_csv("exercices/Connections.csv")
+Connections <- read_csv(file="exercices/Connections.csv")
 ```
 
     ## Rows: 1054 Columns: 6
@@ -28,7 +20,7 @@ Connections <- read_csv("exercices/Connections.csv")
 View(Connections)
 ```
 
-## Including Plots
+## Get the count of contacts + Create nodes and edges dataframes
 
 You can also embed plots, for example:
 
