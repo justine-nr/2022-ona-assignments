@@ -210,13 +210,14 @@ vertex_attr(g)
     ##  [1] "gold" "gold" "gold" "gold" "gold" "gold" "red"  "red"  "red"  "red"
 
 ``` r
-plot(g, layout=layout_with_fr, main="Fakebook bus network graph")
+plot(g, layout=layout_with_fr)
+title("Fakebook bus network graph")
 show(g)
 ```
 
-    ## IGRAPH 1311d4b UN-- 10 17 -- 
+    ## IGRAPH c4c2e56 UN-- 10 17 -- 
     ## + attr: name (v/c), size (v/n), color (v/c)
-    ## + edges from 1311d4b (vertex names):
+    ## + edges from c4c2e56 (vertex names):
     ##  [1] 1--2 2--A A--B A--C B--C 3--B B--D 6--B 3--C 4--C C--D 3--D 5--D 6--D 3--4
     ## [16] 3--5 5--6
 
