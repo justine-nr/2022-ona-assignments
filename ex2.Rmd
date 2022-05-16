@@ -3,26 +3,29 @@ title: "ex2"
 output: github_document
 date: '2022-05-16'
 ---
-
-# Load objects
-
+## Load objects
 ### Load Libraries
+```{r }
 library(tidyverse)
 library(ggraph)
 library(tidygraph)
 library(igraph)
+```
 
 ### Load nodes table
+```{r }
 nodes <- read_csv(file="exercices/Exercice 2_Nodes table.csv")
-View(nodes)
+show(nodes)
 head(nodes,10)
-
+```
 ### Load links table
+```{r }
 links <- read_csv(file="exercices/Exercice 2_Links table.csv")
-View(links)
+show(links)
 head(links,17)
-
-# Visualize network 
+```
+## Visualize network
+```{r }
 g <- graph_from_data_frame(d=links, vertices=nodes, directed=FALSE)
 par(mar=c(0,0,0,0))
 
@@ -37,31 +40,34 @@ V(g)$color[V(g)$name %in% light_side] <- "gold"
 vertex_attr(g)
 
 plot(g, layout=layout_with_fr, main="Fakebook bus network graph")
+show(g)
 
 ###  Add legend to indicate what the colors correspond to
 legend(x=.75, y=.75, legend=c("Open seat", "Filled seat"), 
        pch=21, pt.bg=c("red", "gold"), pt.cex=2, bty="n")
+```
 
-# Calculate measures of centrality
-
-###  Degree centrality
+## Calculate measures of centrality
+```{r }
+##  Degree centrality
 degree <- degree(g,-4)
-view(tail(degree,4))
+show(tail(degree,4))
 
-Nodes B, C, and D all have the same highest degree centrality (number of edges connected to it) and hence more influence than A
+## Nodes B, C, and D all have the same highest degree centrality (number of edges connected to it) and hence more influence than A
 
-### Closeness centrality
+## Closeness centrality
 closeness <- closeness(g)
-view(tail(closeness,4))
+show(tail(closeness,4))
 
-Nodes A and D all have the shortest closeness centrality (mean distance from a node to other nodes) and hence more direct influence on others
+## Nodes A and D all have the shortest closeness centrality (mean distance from a node to other nodes) and hence more direct influence on others
 
-###  Betweeness centrality
+## Betweeness centrality
 
 betweenness <- betweenness(g)
-view(tail(betweenness,4))
+show(tail(betweenness,4))
 
-Node A has the highest betweenness centrality (extent to which a node lies on paths between other nodes) and hence more influence within a network, followed by nodes B and C
+## Node A has the highest betweenness centrality (extent to which a node lies on paths between other nodes) and hence more influence within a network, followed by nodes B and C
+```
 
-### Conclusion
-Choice of a seat: in the context of short bus rides, seat B is likely to be indicated because it would be beneficial for building a network. While for long bus rides, seat A seems to be the most desirable option because it would be beneficial for connecting people with others.
+## Conclusion
+### Choice of a seat: in the context of short bus rides, seat B is likely to be indicated because it would be beneficial for building a network. While for long bus rides, seat A seems to be the most desirable option because it would be beneficial for connecting people with others.
