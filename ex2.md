@@ -214,9 +214,9 @@ plot(g, layout=layout_with_fr, main="Fakebook bus network graph")
 show(g)
 ```
 
-    ## IGRAPH bb35286 UN-- 10 17 -- 
+    ## IGRAPH 1311d4b UN-- 10 17 -- 
     ## + attr: name (v/c), size (v/n), color (v/c)
-    ## + edges from bb35286 (vertex names):
+    ## + edges from 1311d4b (vertex names):
     ##  [1] 1--2 2--A A--B A--C B--C 3--B B--D 6--B 3--C 4--C C--D 3--D 5--D 6--D 3--4
     ## [16] 3--5 5--6
 
