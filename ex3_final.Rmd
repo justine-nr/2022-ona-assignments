@@ -1,0 +1,365 @@
+---
+title: "Exercice 3"
+output: github_document
+date: '2022-05-25'
+---
+
+## Load and attach add-on packages
+```{r }
+library(readr)
+library(arrow)
+require(readr, lib.loc = NULL, quietly = FALSE,
+        warn.conflicts,
+        character.only = FALSE,
+        mask.ok, exclude, include.only,
+        attach.required = missing(include.only))
+require(arrow, lib.loc = NULL, quietly = FALSE,
+        warn.conflicts,
+        character.only = FALSE,
+        mask.ok, exclude, include.only,
+        attach.required = missing(include.only))
+```
+
+#Load the files and add the following variables for examiners:
+Load the following data: applications from `app_data_sample.parquet` + edges from `edges_sample.csv`
+```{r }
+applications <- read_parquet("/Users/justinenadeau-routhier/myrepo/myrepo/app_data_sample.parquet")
+edges <- read_csv("/Users/justinenadeau-routhier/myrepo/myrepo/edges_sample.csv")
+```
+```{r }
+applications
+```
+```{r }
+edges
+```
+## Add the Gender variable for examiners:
+```{r }
+library(gender)
+library(dplyr)
+
+# List of examiner first names without repetitions
+examiner_names <- applications %>%
+  distinct(examiner_name_first)
+
+examiner_names
+```
+## Get a table of examiner names and gender:
+```{r }
+library(purrr)
+library (dplyr)
+library(tidytext)
+library(tidyr)
+
+examiner_names_gender <- examiner_names %>%
+  do(results = gender(.$examiner_name_first, method = "ssa")) %>%
+  unnest(cols = c(results), keep_empty = TRUE) %>%
+  select(
+    examiner_name_first = name,
+    gender,
+    proportion_female)
+
+examiner_names_gender
+```
+## Join  table back to  original applications data and discard the temporary tables we have just created to reduce clutter in our environment
+
+``` {r }
+# remove extra colums from the gender table
+examiner_names_gender <- examiner_names_gender %>% 
+  select(examiner_name_first, gender)
+
+# joining gender back to the dataset
+applications <- applications %>% 
+  left_join(examiner_names_gender, by = "examiner_name_first")
+
+# cleaning up
+rm(examiner_names)
+rm(examiner_names_gender)
+gc()
+```
+
+## Join the data back to the applications table
+
+## Add the Race variable for examiners:
+```{r }
+library(wru)
+
+# List of examiner surnames without repetitions
+examiner_surnames <- applications %>% 
+  select(surname = examiner_name_last) %>% 
+  distinct()
+
+examiner_surnames
+```
+``` {r }
+
+# Estimate likely race of an examiner and get probability across five broad US Census categories: white, black, Hispanic, Asian and other
+examiner_race <- predict_race(voter.file = examiner_surnames, surname.only = T) %>% 
+  as_tibble()
+
+examiner_race
+```
+
+``` {r }
+
+# Pick the race category that has the highest probability for each last name and then join the table back to the main applications table
+examiner_race <- examiner_race %>% 
+  mutate(max_race_p = pmax(pred.asi, pred.bla, pred.his, pred.oth, pred.whi)) %>% 
+  mutate(race = case_when(
+    max_race_p == pred.asi ~ "Asian",
+    max_race_p == pred.bla ~ "black",
+    max_race_p == pred.his ~ "Hispanic",
+    max_race_p == pred.oth ~ "other",
+    max_race_p == pred.whi ~ "white",
+    TRUE ~ NA_character_))
+
+examiner_race
+```
+## Join the data back to the applications table
+``` {r }
+# removing extra columns
+examiner_race <- examiner_race %>% 
+  select(surname,race)
+
+applications <- applications %>% 
+  left_join(examiner_race, by = c("examiner_name_last" = "surname"))
+
+rm(examiner_race)
+rm(examiner_surnames)
+gc()
+```
+
+## Add the Tenure variable for examiners:
+```{r }
+library(lubridate) # to work with dates
+
+examiner_dates <- applications %>% 
+  select(examiner_id, filing_date, appl_status_date) 
+
+examiner_dates
+```
+
+``` {r }
+examiner_dates <- examiner_dates %>% 
+  mutate(start_date = ymd(filing_date), end_date = as_date(dmy_hms(appl_status_date)))
+```
+
+``` {r }
+examiner_dates <- examiner_dates %>% 
+  group_by(examiner_id) %>% 
+  summarise(
+    earliest_date = min(start_date, na.rm = TRUE), 
+    latest_date = max(end_date, na.rm = TRUE),
+    tenure_days = interval(earliest_date, latest_date) %/% days(1)
+    ) %>% 
+  filter(year(latest_date)<2018)
+
+examiner_dates
+```
+## Join the data back to the applications table
+``` {r }
+applications <- applications %>% 
+  left_join(examiner_dates, by = "examiner_id")
+
+rm(examiner_dates)
+gc()
+```
+
+``` {r }
+head(applications)
+```
+
+# Pick two workgroups to focus on (represented by the first 3 digits of `examiner_art_unit` value): 175 and 176 
+``` {r }
+colummn_7 <- applications %>% select(examiner_art_unit)
+
+#Select the first two workgroups: 175 and 176
+head(unique(colummn_7),2) 
+```
+
+## List examiners from the two selected workgroups (175 and 176)
+``` {r }
+
+# String staring from the 1st number to 3rd number is extracted as a substring
+workgroup_175 = applications[substr(applications$examiner_art_unit, 1,3)==175,]
+workgroup_176 = applications[substr(applications$examiner_art_unit, 1,3)==176,]
+
+head(workgroup_175)
+head(workgroup_176)
+```
+## Show how  the two workgroups (175 and 176) compare on examiners’ demographics (summary statistics about gender)
+``` {r }
+# Calculate gender ratio in the workgroups 175
+round(table(workgroup_175['gender'])/dim(workgroup_175)[1]*100,2)
+```
+From the output we can observe:
+31.13% of examiners in the workgroup 175 are female and
+58.08% of examiners in the workgroup 175 are male. Therefore, the workgroup 175 is significantly male-dominated.
+``` {r }
+# Calculate gender ratio in the workgroups 176
+round(table(workgroup_176['gender'])/dim(workgroup_176)[1]*100,2)
+```
+From the output we can observe:
+30.72% of examiners in the workgroup 176 are female and
+58.62% of examiners in the workgroup 176 are males. Therefore, the workgroup 176 is significantly male-dominated.
+``` {r }
+# Calculate average gender ratio in the applications table (as a reference)
+round(table(applications['gender'])/dim(applications)[1]*100,2)
+```
+From the output we can observe:
+28.30% of examiners in the applications table  are female and
+56.65% of examiners in the applications table are males. Therefore, the average examiners is significantly male-dominated.
+
+## Show how the two workgroups (175 and 176) compare on examiners’ demographics (summary plots about gender)
+``` {r }
+library(gridExtra)
+library(tidyverse)
+
+plot_gender_175 <- ggplot(data=workgroup_175, aes(x=gender)) +
+  geom_bar(aes(y = (..count..)/sum(..count..)*100),color="black",fill="light green") + 
+  theme_minimal() +
+  ylab("Ratio (%)")+
+  xlab("Gender")+
+  ylim(0,70)+
+  ggtitle(paste0("Gender Ratio for Workgroup 175"))
+
+plot_gender_176 <- ggplot(data=workgroup_176, aes(x=gender)) +
+  geom_bar(aes(y = (..count..)/sum(..count..)*100),color="black",fill="light blue") +
+  theme_minimal() +
+  ylab("Ratio (%)")+
+  xlab("Gender")+
+  ylim(0,70)+
+  ggtitle(paste0("Gender Ratio for Workgroup 176"))
+
+plot_gender_avg <- ggplot(data=applications['gender'], aes(x=gender)) +
+  geom_bar(aes(y = (..count..)/sum(..count..)*100),color="black",fill="light grey") +
+  theme_minimal() +
+  ylab("Ratio (%)")+
+  xlab("Gender")+
+  ylim(0,70)+
+  ggtitle(paste0("Average Gender Ratio for Examiners"))
+
+grid.arrange(plot_gender_175,plot_gender_176,plot_gender_avg,widths=c(1,1))
+```
+
+## Show how the two workgroups (175 and 176) compare on examiners’ demographics (summary statistics about race)
+``` {r }
+# Determine racial profile in the workgroups 175
+race_175 <- round(table(workgroup_175['race'])/dim(workgroup_175)[1]*100,2)
+race_175
+```
+From the output we can observe:
+19.27% of examiners in the workgroup 175 are Asian,
+1.79% of examiners in the workgroup 175 are black,
+1.71% of examiners in the workgroup 175 are Hispanic, and
+77.23% of examiners in the workgroup 175 are white. Therefore, the workgroup 175 is significantly white-dominated.
+``` {r }
+# Determine racial profile in the workgroups 176
+race_176 <- round(table(workgroup_176['race'])/dim(workgroup_176)[1]*100,2)
+race_176
+```
+From the output we can observe:
+25.11% of examiners in the workgroup 176 are Asian,
+3.35% of examiners in the workgroup 176 are black,
+3.01% of examiners in the workgroup 176 are Hispanic, and
+68.53% of examiners in the workgroup 176 are white. Therefore, the workgroup 176 is significantly white-dominated.
+``` {r }
+# Determine racial profile in the applications table (as a reference)
+race_avg <- round(table(applications['race'])/dim(applications)[1]*100,2)
+race_avg
+```
+From the output we can observe:
+29.18% of examiners in the workgroup 175 are Asian,
+4.46% of examiners in the workgroup 175 are black,
+2.96% of examiners in the workgroup 175 are Hispanic,
+63.38% of examiners in the workgroup 175 are white, and
+0.02% of examiners in the workgroup 175 are a member of another race.Therefore, the average examiners is significantly white-dominated.
+
+## Show how the two workgroups (175 and 176) compare on examiners’ demographics (summary plots about race)
+``` {r }
+library(gridExtra)
+library(tidyverse)
+
+par(mfrow=c(1,3)) 
+lbls <- c("Asian", "black", "Hispanic", "white")
+lbls_o <- c("Asian", "black", "Hispanic", "other", "white")
+
+plot_race_175 <- pie(race_175,labels = lbls, col=rainbow(length(race_175)),main = "Racial Profile in Workgroups 175",clockwise = TRUE)
+
+plot_race_176 <- pie(race_176,labels = lbls, col=rainbow(length(race_175)),main = "Racial Profile in Workgroups 176",clockwise = TRUE)
+
+plot_race_avg <- pie(race_avg,labels = lbls_o, col=rainbow(length(race_avg)),main = "Average Racial Profile Examiners",clockwise = TRUE)
+```
+
+# Create advice advice_networks from `edges_sample`
+
+``` {r }
+library(dplyr)
+library(tidygraph) 
+
+# Identify the workgroups of interest
+art_unit = distinct(subset(applications, select=c(examiner_art_unit, examiner_id)))
+
+# Add workgroups to use  as an indicator in the graph and select the groups of interest
+art_unit$work_group = substr(art_unit$examiner_art_unit, 1,3)
+art_unit = art_unit[art_unit$work_group==175 | art_unit$work_group==176,]
+
+# Merge
+merger = merge(x=edges, y=art_unit, by.x="ego_examiner_id", by.y="examiner_id", all.x=TRUE) %>% rename(art_unit_ego = examiner_art_unit, work_group_ego=work_group)
+
+# Drop the NA values (other groups than 175 or 176)
+merger = drop_na(merger)
+
+# Repete for the alters
+merger = merge(x=merger, y=art_unit, by.x="alter_examiner_id", by.y="examiner_id", all.x=TRUE)%>% rename(art_unit_alter = examiner_art_unit, work_group_alter=work_group)
+
+merger = drop_na(merger)
+
+```
+
+There are 1651 edges left  representing examiners from the workgroups 175 and 176.
+
+``` {r }
+# Define focal nodes ("egos") and the nodes to whom egos are directly connected to ("alters") to build the Ego advice_networks
+library(igraph)
+egos = subset(merger, select=c(ego_examiner_id, art_unit_ego, work_group_ego)) 
+egos = egos %>% rename(examiner_id=ego_examiner_id,art_unit=art_unit_ego,work_group=work_group_ego)
+
+nodes = subset(merger, select=c(alter_examiner_id, art_unit_alter, work_group_alter)) 
+nodes = nodes %>% rename(examiner_id=alter_examiner_id,art_unit=art_unit_alter, work_group=work_group_alter)
+
+nodes = distinct(rbind(egos, nodes)) %>% group_by(examiner_id) %>% summarise(examiner_id = first(examiner_id), art_unit = first(art_unit), work_group = first(work_group))
+
+# Creates an igraph graph from two data frames containing the edge list and edge/vertex attributes
+advice_network <- graph_from_data_frame(merger, directed=TRUE, vertices=nodes)
+print(advice_network, e=TRUE, v=TRUE)
+```
+
+``` {r }
+library(ggraph)
+# Calculate centrality scores in selected workgroups
+# degree centrality (number of edges connected to it)
+degree_examiners <- round(degree(advice_network, v=V(advice_network)),2)
+# closeness centrality (mean distance from a node to other nodes)
+closeness_examiners <- round(closeness(advice_network),2)
+# betweenness centrality (extent to which a node lies on paths between other nodes) 
+betweenness_examiners <- round(betweenness(advice_network),2) 
+
+V(advice_network)$size = degree_examiners
+V(advice_network)$bet = betweenness_examiners
+V(advice_network)$clo = closeness_examiners
+V(advice_network)$color = nodes$art_unit
+
+ggraph(advice_network, layout="kk") +
+  geom_edge_link()+
+  geom_node_point(aes(size = degree_examiners, colour = closeness_examiners))
+  coord_fixed()
+```
+# Calculate centrality scores for examiners in the selected workgroups
+``` {r }
+# Calculate three indices (degree, betweenness and closeness) to the advice_network and 
+calculate_centralities = data.frame(cbind(degree_examiners, betweenness_examiners, closeness_examiners))
+
+# Display the top 6 examiners based on calculated centrality indices
+head(calculate_centralities[order(-degree_examiners),])
+```
+It can be observed that the `examiner 67829` has the highest degree of centrality and the highest associated closeness. The `examiner 60203` should also be considered due to it’s high betweenness, combined with a high degree of centrality. The relationship between centrality and other examiners’ characteristics has yet to be determined graphically.
