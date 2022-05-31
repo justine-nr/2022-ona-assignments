@@ -378,7 +378,7 @@ gc()
 ```
 
     ##            used  (Mb) gc trigger   (Mb) limit (Mb)  max used   (Mb)
-    ## Ncells  5956841 318.2   16186346  864.5         NA  16186346  864.5
+    ## Ncells  5956841 318.2   16186342  864.5         NA  16186342  864.5
     ## Vcells 67572648 515.6  168820280 1288.0     102400 140419080 1071.4
 
 ``` r
@@ -727,11 +727,11 @@ advice_network <- graph_from_data_frame(merger, directed=TRUE, vertices=nodes)
 print(advice_network, e=TRUE, v=TRUE)
 ```
 
-    ## IGRAPH cfd7fca DN-- 192 1651 -- 
+    ## IGRAPH 4e3c7a3 DN-- 192 1651 -- 
     ## + attr: name (v/c), art_unit (v/n), work_group (v/c),
     ## | application_number (e/c), advice_date (e/n), art_unit_ego (e/n),
     ## | work_group_ego (e/c), art_unit_alter (e/n), work_group_alter (e/c)
-    ## + edges from cfd7fca (vertex names):
+    ## + edges from 4e3c7a3 (vertex names):
     ##  [1] 59706->66436 59706->66436 59706->66436 59816->71143 59816->71143
     ##  [6] 59816->71143 59816->71143 59870->59165 59870->59165 59975->94301
     ## [11] 59975->71142 59975->94301 59975->95799 59975->71142 59975->92487
